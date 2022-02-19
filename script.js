@@ -65,9 +65,12 @@ const getComplementaryColor = (color = '') => {
   return '#' + iter;
 };
 
-var W = window.innerWidth;
-var H = window.innerHeight;
-size = Math.min(W, H);
+var DEFAULT_SIZE = 1000
+var WIDTH = window.innerWidth
+var HEIGHT = window.innerHeight
+var size = Math.min(WIDTH, HEIGHT)
+var strokeBase = size / DEFAULT_SIZE
+
 let ntrees, iterations;
 let bgColor, fgColor, luma;
 let attractor;
@@ -96,7 +99,7 @@ function setup()
   ntrees = 20;
   iterations = 640;
   gravity = 1000;
-  attractor = createVector(size/2, -8000);
+  attractor = createVector(size/2, -8000*strokeBase);
   branches = initBranches(ntrees);
 }
 
@@ -123,9 +126,9 @@ function initBranches(ntrees) {
   branches = Array();
   for (var i = 0; i < ntrees; i++) {
     let position = createVector( i*(width/ntrees)+(width/ntrees)/2, height );
-    let speed = createVector(0,-2);
+    let speed = createVector(0,-2*strokeBase);
     // (start, speed, wid, drift, diverge, divRateMin, divRateMax)
-    branches.push( new Branch( position, speed, R.random_num(0.1, 8), 0.2, 0.5, 50, 150 ) );
+    branches.push( new Branch( position, speed, R.random_num(0.1, 8)*strokeBase, 0.2, 0.5, 50, 150 ) );
   }
   return branches;
 }
