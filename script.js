@@ -1,6 +1,5 @@
 let tokenData = {
   hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738",
-  hash: "0x"+Math.random(2,3498294),
   tokenId: "123000456"
 }
 
@@ -85,9 +84,11 @@ function setup()
     b = R.random_int(180,220);
     fgcolor = color(150,0,0,51);
     fgcolorSolid = color(150,0,0,255);
-    frameColor = color(100,0,0,255);
+    frameColor = color(r*0.7, g*0.7, b*0.7);
+    horizonColor = color(r*0.9, g*0.9, b*0.9);
     bgcolor = color(r,g,b);
     circleColor = color(compColor(bgcolor));
+    circleColor.setAlpha(90);
     vGradient(0, 0, width, height, bgcolor, color(r*1.3,g*1.3,b*1.3));
   } else {
     r = R.random_int(0,50);
@@ -96,8 +97,10 @@ function setup()
     fgcolor = color(250,250,250,51);
     fgcolorSolid = color(250,250,250,255);
     frameColor = color(r*1.4, g*1.4, b*1.4);
+    horizonColor = color(r*1.1, g*1.1, b*1.1);
     bgcolor = color(r,g,b);
     circleColor = color(compColor(bgcolor));
+    circleColor.setAlpha(60);
     vGradient(0, 0, width, height, bgcolor, color(r*0.5,g*0.5,b*0.5));
   }
   rejectorColor = lerpColor(fgcolor, bgcolor,0.8);
@@ -111,8 +114,13 @@ function setup()
   attractor = createVector(width/2, height*2);
   rejectors = initRejectors(nrejectors);
   branches = initBranches(ntrees);
+  push();
+  noStroke();
+  fill(horizonColor);
+  //rect(0, height*0.5, width, height)
+  pop();
   for(let i=0; i<rejectors.length; i++) {
-    drawRejector(rejectors[i]);
+    drawRejector(rejectors[i], true);
   }
 }
 
@@ -139,7 +147,7 @@ function draw()
           branches[j] = null;
         } else {
           branches[j].grow(attractor, rejectors, gravity, frameCount);
-          //branches[j].grow(null, gravity, rejectors, frameCount);            
+          //branches[j].grow(null, gravity, rejectors, frameCount);
         }
       }
     }
@@ -155,11 +163,7 @@ function draw()
 }
 
 function mouseClicked() {
-  //background(0);
   save("frame.png");
-
-  //branches = null;
-  //branches = initBranches(ntrees);
 }
 
 function initBranches(ntrees) {
@@ -182,7 +186,7 @@ function initRejectors(nrejectors) {
   for (let i = 0; i < nrejectors; i++) {
     let rejector = Object();
     let x = i*(width/nrejectors)+(width/nrejectors)/2*R.random_num(0.5,2); //R.random_num(0, 1)*DIM;
-    let y = R.random_num(0.1, 0.8)*DIM;
+    let y = R.random_num(0.1, 0.8)*height;
     rejector.pos = createVector(x, y);
     rejector.mag = strokeBase*R.random_num(200,600)/nrejectors;
     rejector.h = rejector.mag + strokeBase*R.random_num(200,400);
@@ -191,7 +195,8 @@ function initRejectors(nrejectors) {
   return rejectors;
 }
 
-function drawRejector(rejector) {
+function drawRejector(rejector,shadow) {
+  if(!shadow) shadow = false;
   let pos = rejector.pos;
   let w = rejector.mag;
   let h = rejector.h;
@@ -208,6 +213,18 @@ function drawRejector(rejector) {
     bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
     fill( lerpColor(bgcolor, color(0,0,0), 0.5) );
     bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+  }
+  if(shadow) {
+    posShadow = createVector(pos.x+20*strokeBase, pos.y+5*strokeBase);
+    push();
+    stroke(0,0,0,0);
+    if(light)
+      fill(0,0,0,10);
+    else
+      fill(0,0,0,30);
+    bezier(posShadow.x, posShadow.y, posShadow.x-w, posShadow.y+w, posShadow.x, posShadow.y+strokeBase*100, posShadow.x, posShadow.y+h);
+    bezier(posShadow.x, posShadow.y, posShadow.x+w, posShadow.y+w, posShadow.x, posShadow.y+strokeBase*100, posShadow.x, posShadow.y+h);
+    pop();
   }
   pop();
   push();
@@ -236,7 +253,6 @@ function compColor(c) {
   for(let i=0; i<input.length; i++) {
     output[i] = 255 - input[i];
   }
-  output[3] = 51;
   return color(output);
 }
 
@@ -267,10 +283,9 @@ class Branch {
     this.divRateMin = divRateMin;
     this.divRateMax = divRateMax;
   }
-  // Attractor and gravity
   grow(attractor, rejectors, gravity, frames) {
     strokeWeight(this.wid);
-    let attractorNorm, rejectorsNorm = Array();
+    let attractorNorm;
     if(attractor) {
       attractor.x = this.curPos.x;
       attractorNorm = attractor.copy();
@@ -304,8 +319,6 @@ class Branch {
       this.child2.grow(attractor, rejectors, gravity, frames);
     }
   }
-
-  // Helper function for drawing lines between vectors
   linePV(a, b) {
     line(a.x, a.y, b.x, b.y);
   }
