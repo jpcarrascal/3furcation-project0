@@ -1,8 +1,20 @@
-tokenData = {
+let tokenData = {
   hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738",
-  //hash: "0x"+Math.random(2,3498294),
+  hash: "0x"+Math.random(2,3498294),
   tokenId: "123000456"
 }
+
+function genTokenData(projectNum) {
+  let data = {};
+  let hash = "0x";
+  for (var i = 0; i < 64; i++) {
+    hash += Math.floor(Math.random() * 16).toString(16);
+  }
+  data.hash = hash;
+  data.tokenId = (projectNum * 1000000 + Math.floor(Math.random() * 1000)).toString();
+  return data;
+}
+tokenData = genTokenData(123);
 
 class Random {
   constructor() {
@@ -23,43 +35,33 @@ class Random {
         return (t >>> 0) / 4294967296;
       };
     };
-    // seed prngA with first half of tokenData.hash
     this.prngA = new sfc32(tokenData.hash.substr(2, 32));
-    // seed prngB with second half of tokenData.hash
     this.prngB = new sfc32(tokenData.hash.substr(34, 32));
     for (let i = 0; i < 1e6; i += 2) {
       this.prngA();
       this.prngB();
     }
   }
-  // random number between 0 (inclusive) and 1 (exclusive)
   random_dec() {
     this.useA = !this.useA;
     return this.useA ? this.prngA() : this.prngB();
   }
-  // random number between a (inclusive) and b (exclusive)
   random_num(a, b) {
     return a + (b - a) * this.random_dec();
   }
-  // random integer between a (inclusive) and b (inclusive)
-  // requires a < b for proper probability distribution
   random_int(a, b) {
     return Math.floor(this.random_num(a, b + 1));
   }
-  // random boolean with p as percent liklihood of true
   random_bool(p) {
     return this.random_dec() < p;
   }
-  // random value in an array of items
   random_choice(list) {
     return list[this.random_int(0, list.length - 1)];
   }
 }
 
 var DEFAULT_SIZE = 1000
-var WIDTH = window.innerWidth;
-var HEIGHT = window.innerHeight;
-var DIM = Math.min(WIDTH, HEIGHT);
+var DIM = Math.min(window.innerWidth, window.innerHeight);
 var strokeBase = DIM / DEFAULT_SIZE;
 
 let ntrees, iterations;
@@ -78,12 +80,15 @@ function setup()
   strokeJoin(ROUND);
   light = R.random_bool(0.5);
   if(light) {
-    r = R.random_int(190,200);
-    g = R.random_int(190,200);
-    b = R.random_int(200,220);
+    r = R.random_int(180,200);
+    g = R.random_int(180,200);
+    b = R.random_int(180,220);
     fgcolor = color(150,0,0,51);
     fgcolorSolid = color(150,0,0,255);
     frameColor = color(100,0,0,255);
+    bgcolor = color(r,g,b);
+    circleColor = color(compColor(bgcolor));
+    vGradient(0, 0, width, height, bgcolor, color(r*1.3,g*1.3,b*1.3));
   } else {
     r = R.random_int(0,50);
     g = R.random_int(0,50);
@@ -91,22 +96,20 @@ function setup()
     fgcolor = color(250,250,250,51);
     fgcolorSolid = color(250,250,250,255);
     frameColor = color(r*1.4, g*1.4, b*1.4);
+    bgcolor = color(r,g,b);
+    circleColor = color(compColor(bgcolor));
+    vGradient(0, 0, width, height, bgcolor, color(r*0.5,g*0.5,b*0.5));
   }
-  bgcolor = color(r,g,b);
   rejectorColor = lerpColor(fgcolor, bgcolor,0.8);
-  rejectorColor.setAlpha(255);
-  background(bgcolor);
-  if(light) vGradient(0, 0, width, height, bgcolor, color(r*1.2,g*1.2,b*1.2));
-  else      vGradient(0, 0, width, height, bgcolor, color(r*0.5,g*0.5,b*0.5));
+  rejectorColor.setAlpha(255);    
   stroke(fgcolor);
   fill(fgcolor);
-  //background(255,245,180,255); stroke(150,0,0,51);
   frameRate(60);
   ntrees = 40, nrejectors = R.random_int(2,8);
   iterations = 600;
   gravity = 100000;
   attractor = createVector(width/2, height*2);
-  rejectors = initRejectors(nrejectors);//[createVector(200*strokeBase, 900*strokeBase), createVector(800*strokeBase,600*strokeBase)]
+  rejectors = initRejectors(nrejectors);
   branches = initBranches(ntrees);
   for(let i=0; i<rejectors.length; i++) {
     drawRejector(rejectors[i]);
@@ -119,7 +122,6 @@ function draw()
   if(frameCount < iterations) {
     if(frameCount%4 ==0) {
       fgcolor.setAlpha(alpha(fgcolor)+0);
-      //stroke(fgcolor);
     }
     for (let j=0; j<branches.length; j++) {
       if(branches[j]) {
@@ -149,16 +151,12 @@ function draw()
   if(frameCount == iterations) {
     branches = null;
     print ("STOP");
-    //save("frame.png");
-//    setTimeout( function() {
-//      window.location.reload();
-//    }, 500);
   }
 }
 
 function mouseClicked() {
   //background(0);
-
+  save("frame.png");
 
   //branches = null;
   //branches = initBranches(ntrees);
@@ -214,6 +212,7 @@ function drawRejector(rejector) {
   pop();
   push();
   noStroke();
+  fill(circleColor);
   circle(pos.x, pos.y+h/5, w/2);
   pop();
 }
@@ -226,40 +225,21 @@ function drawFrame() {
   rect(0, 0, width, 0.02*width);
   rect(0, height-(0.02*width), width, 0.02*width);
   rect(0.98*width, 0, 0.02*width, height);
-  /*
-  let tmpColor;
-  if(light) {
-    tmpColor = bgcolor;
-    tmpColor.setAlpha(150);
-  } else {
-    tmpColor = fgcolor;
-    tmpColor.setAlpha(80);
-  }
-  stroke(tmpColor);
-  strokeWeight(strokeBase);
-  noFill();
-  rect(0.01*width, 0.01*width, 0.98*width, height-0.02*width);
-  fill(frameColor);
-  rect(0, 0, 0.02*width);
-  rect(0.98*width, height-0.02*width, 0.02*width);
-  rect(0, height-0.02*width, 0.02*width);
-  rect(0.98*width, 0, 0.02*width);
-  */
   pop();  
 }
 
-/*
-function predominantColor(c) {
-  let elem = [red(c), green(c), blue(c)];
+
+function compColor(c) {
+  let input = [red(c), green(c), blue(c)];
+  let output = [1, 1, 1];
   let largest = 0;
-  for(let i=0; i<elem.length; i++) {
-    if(elem[i] > elem[largest])
-      largest = i;
+  for(let i=0; i<input.length; i++) {
+    output[i] = 255 - input[i];
   }
-  print(largest)
-  return largest;
+  output[3] = 51;
+  return color(output);
 }
-*/
+
 
 function vGradient(x, y, w, h, c1, c2) {
   push();
