@@ -1,6 +1,6 @@
 tokenData = {
   hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738",
-  hash: "0x"+Math.random(2,3498294),
+  //hash: "0x"+Math.random(2,3498294),
   tokenId: "123000456"
 }
 
@@ -57,13 +57,13 @@ class Random {
 }
 
 var DEFAULT_SIZE = 1000
-var WIDTH = window.innerWidth
-var HEIGHT = window.innerHeight
-var size = Math.min(WIDTH, HEIGHT)
-var strokeBase = size / DEFAULT_SIZE
+var WIDTH = window.innerWidth;
+var HEIGHT = window.innerHeight;
+var DIM = Math.min(WIDTH, HEIGHT);
+var strokeBase = DIM / DEFAULT_SIZE;
 
 let ntrees, iterations;
-let r, g, b, bgcolor, fgcolor, fgcolorSolid, frameColor;
+let r, g, b, bgcolor, fgcolor, fgcolorSolid, frameColor, rejectorColor;
 let attractor;
 let rejectors;
 let gravity;
@@ -72,35 +72,42 @@ let R = new Random();
 let light;
 function setup()
 {
-  createCanvas(size, size);
+  createCanvas(DIM*3/4, DIM);
   smooth();
   strokeCap(ROUND);
   strokeJoin(ROUND);
   light = R.random_bool(0.5);
   if(light) {
-    r = R.random_int(200,255), g = R.random_int(200,255), b = R.random_int(200,255);
+    r = R.random_int(190,200);
+    g = R.random_int(190,200);
+    b = R.random_int(200,220);
     fgcolor = color(150,0,0,51);
     fgcolorSolid = color(150,0,0,255);
     frameColor = color(100,0,0,255);
   } else {
-    r = R.random_int(0,50), g = R.random_int(0,50), b = R.random_int(0,50);
+    r = R.random_int(0,50);
+    g = R.random_int(0,50);
+    b = R.random_int(0,50);
     fgcolor = color(250,250,250,51);
     fgcolorSolid = color(250,250,250,255);
-    frameColor = color(80,80,80,255);
+    frameColor = color(r*1.4, g*1.4, b*1.4);
   }
   bgcolor = color(r,g,b);
+  rejectorColor = lerpColor(fgcolor, bgcolor,0.8);
+  rejectorColor.setAlpha(255);
   background(bgcolor);
+  if(light) vGradient(0, 0, width, height, bgcolor, color(r*1.2,g*1.2,b*1.2));
+  else      vGradient(0, 0, width, height, bgcolor, color(r*0.5,g*0.5,b*0.5));
   stroke(fgcolor);
   fill(fgcolor);
   //background(255,245,180,255); stroke(150,0,0,51);
   frameRate(60);
-  ntrees = 40;
+  ntrees = 40, nrejectors = R.random_int(2,8);
   iterations = 600;
   gravity = 100000;
-  attractor = createVector(size/2, 2000*strokeBase);
-  rejectors = initRejectors();//[createVector(200*strokeBase, 900*strokeBase), createVector(800*strokeBase,600*strokeBase)]
+  attractor = createVector(width/2, height*2);
+  rejectors = initRejectors(nrejectors);//[createVector(200*strokeBase, 900*strokeBase), createVector(800*strokeBase,600*strokeBase)]
   branches = initBranches(ntrees);
-
   for(let i=0; i<rejectors.length; i++) {
     drawRejector(rejectors[i]);
   }
@@ -108,23 +115,51 @@ function setup()
 
 function draw()
 {
-  
+  let livingBranches = 0;
   if(frameCount < iterations) {
-  //if(frameCount == 1) {
-    //for(let i=0; i<iterations; i++) {
-      for (let j=0; j<branches.length; j++) {
-        branches[j].grow(attractor, rejectors, gravity, frameCount);
-        //branches[j].grow(null, gravity, rejectors, frameCount);
+    if(frameCount%4 ==0) {
+      fgcolor.setAlpha(alpha(fgcolor)+0);
+      //stroke(fgcolor);
+    }
+    for (let j=0; j<branches.length; j++) {
+      if(branches[j]) {
+        livingBranches++;
+        if (frameCount % (floor(R.random_num(branches[j].divRateMin, branches[j].divRateMax))) == 0) {
+          branches[j].growing = false;
+          let oneChildSize = R.random_num(0.2, 0.8);
+          let speed1 = p5.Vector.fromAngle(branches[j].speed.heading()+((PI/2)*branches[j].diverge)+R.random_num(-branches[j].drift, branches[j].drift)).mult(branches[j].speed.mag());
+          let speed2 = p5.Vector.fromAngle(branches[j].speed.heading()-((PI/2)*branches[j].diverge)+R.random_num(-branches[j].drift, branches[j].drift)).mult(branches[j].speed.mag());
+          branches.push( new Branch(branches[j].curPos, speed1, branches[j].wid*oneChildSize,     branches[j].drift, branches[j].diverge, branches[j].divRateMin, branches[j].divRateMax) );
+          branches.push( new Branch(branches[j].curPos, speed2, branches[j].wid*(1-oneChildSize), branches[j].drift, branches[j].diverge, branches[j].divRateMin, branches[j].divRateMax) );
+          branches[j] = null;
+        } else if (branches[j].curPos.y >= height) {
+          branches[j].growing = false;
+          branches[j] = null;
+        } else {
+          branches[j].grow(attractor, rejectors, gravity, frameCount);
+          //branches[j].grow(null, gravity, rejectors, frameCount);            
+        }
       }
-    //}
+    }
+    for(let i=0; i<rejectors.length; i++) {
+      drawRejector(rejectors[i]);
+    }
   }
   drawFrame();
-  if(frameCount == iterations) print ("STOP");
+  if(frameCount == iterations) {
+    branches = null;
+    print ("STOP");
+    //save("frame.png");
+//    setTimeout( function() {
+//      window.location.reload();
+//    }, 500);
+  }
 }
 
 function mouseClicked() {
   //background(0);
-  saveFrames("frame.png");
+
+
   //branches = null;
   //branches = initBranches(ntrees);
 }
@@ -134,21 +169,25 @@ function initBranches(ntrees) {
   for (let i = 0; i < ntrees; i++) {
     let position = createVector( i*(width/ntrees)+(width/ntrees)/2*R.random_num(0.5,1), 0 );
     let speed = createVector(0,2*strokeBase*R.random_num(0.8,1.2));
-    // (start, speed, wid, drift, diverge, divRateMin, divRateMax)
-    branches.push( new Branch( position, speed, R.random_num(0.1, 8)*strokeBase, 0.1, 0.5, 50, 150 ) );
+    let strokeWidth = R.random_num(0.1, 8)*strokeBase;
+    let drift = 0.15*strokeBase;
+    let diverge = 0.7*strokeBase;
+    let divRateMin = 50;
+    let divRateMax = 150;
+    branches.push( new Branch( position, speed, strokeWidth, drift, diverge, divRateMin, divRateMax ) );
   }
   return branches;
 }
 
-function initRejectors() {
-  const n = R.random_int(2,4);
+function initRejectors(nrejectors) {
   let rejectors = Array();
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < nrejectors; i++) {
     let rejector = Object();
-    let x = i*(width/n)+(width/n)/2*R.random_num(0.5,2); //R.random_num(0, 1)*size;
-    let y = R.random_num(0.1, 0.8)*size;
+    let x = i*(width/nrejectors)+(width/nrejectors)/2*R.random_num(0.5,2); //R.random_num(0, 1)*DIM;
+    let y = R.random_num(0.1, 0.8)*DIM;
     rejector.pos = createVector(x, y);
-    rejector.mag = strokeBase*R.random_num(200,600)/n;
+    rejector.mag = strokeBase*R.random_num(200,600)/nrejectors;
+    rejector.h = rejector.mag + strokeBase*R.random_num(200,400);
     rejectors.push(rejector);
   }
   return rejectors;
@@ -156,42 +195,82 @@ function initRejectors() {
 
 function drawRejector(rejector) {
   let pos = rejector.pos;
-  let r = rejector.mag;
-  let w = r;
-  let h = w + strokeBase*R.random_num(200,400);
+  let w = rejector.mag;
+  let h = rejector.h;
+
+  push();
+  fill(rejectorColor);
+  if(light) {
+    noStroke();
+    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+    fill( lerpColor(bgcolor, color(255,255,255), 0.7) );
+    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+  } else {
+    noStroke();
+    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+    fill( lerpColor(bgcolor, color(0,0,0), 0.5) );
+    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+  }
+  pop();
   push();
   noStroke();
   circle(pos.x, pos.y+h/5, w/2);
-  pop();
-  push();
-  bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
-  if(light) {
-    noFill();
-    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
-  }
   pop();
 }
 
 function drawFrame() {
   push();
-  stroke(0,0,0,0);
+  noStroke();
   fill(frameColor);
-  rect(0, 0, 0.03*size, size);
-  rect(0, 0, size, 0.03*size);
-  rect(0, 0.97*size, size, 0.03*size);
-  rect(0.97*size, 0, 0.03*size, size);
-  let tmpColor = bgcolor;
-  tmpColor.setAlpha(150);
+  rect(0, 0, 0.02*width, height);
+  rect(0, 0, width, 0.02*width);
+  rect(0, height-(0.02*width), width, 0.02*width);
+  rect(0.98*width, 0, 0.02*width, height);
+  /*
+  let tmpColor;
+  if(light) {
+    tmpColor = bgcolor;
+    tmpColor.setAlpha(150);
+  } else {
+    tmpColor = fgcolor;
+    tmpColor.setAlpha(80);
+  }
   stroke(tmpColor);
   strokeWeight(strokeBase);
-  fill(0,0,0,0);
-  rect(0.015*size, 0.015*size, 0.97*size, 0.97*size);
+  noFill();
+  rect(0.01*width, 0.01*width, 0.98*width, height-0.02*width);
   fill(frameColor);
-  rect(0.0075*size, 0.0075*size, 0.015*size);
-  rect(0.9775*size, 0.0075*size, 0.015*size);
-  rect(0.0075*size, 0.9775*size, 0.015*size);
-  rect(0.9775*size, 0.9775*size, 0.015*size);
+  rect(0, 0, 0.02*width);
+  rect(0.98*width, height-0.02*width, 0.02*width);
+  rect(0, height-0.02*width, 0.02*width);
+  rect(0.98*width, 0, 0.02*width);
+  */
   pop();  
+}
+
+/*
+function predominantColor(c) {
+  let elem = [red(c), green(c), blue(c)];
+  let largest = 0;
+  for(let i=0; i<elem.length; i++) {
+    if(elem[i] > elem[largest])
+      largest = i;
+  }
+  print(largest)
+  return largest;
+}
+*/
+
+function vGradient(x, y, w, h, c1, c2) {
+  push();
+  noFill();
+  for (let i = y; i <= y + h; i++) {
+    let inter = map(i, y, y + h, 0, 1);
+    let c = lerpColor(c1, c2, inter);
+    stroke(c);
+    line(x, i, x + w, i);
+  }
+  pop();
 }
 
 //=================================================================
@@ -218,7 +297,6 @@ class Branch {
     }
     if(rejectors) {
       for(let i=0; i<rejectors.length; i++) {
-        //rejectorsNorm.push(rejectors[i].pos.copy());
         rejectors[i].norm = rejectors[i].pos.copy()
       }
     }
@@ -244,25 +322,6 @@ class Branch {
     } else {
       this.child1.grow(attractor, rejectors, gravity, frames);
       this.child2.grow(attractor, rejectors, gravity, frames);
-    }
-
-    if (frames % (floor(R.random_num(this.divRateMin, this.divRateMax))) == 0) {
-      if (this.growing)
-        this.divide();
-    }
-  }
-
-  divide() {
-    if (this.growing) {
-      this.growing = false;
-      let oneChildSize = R.random_num(0.2, 0.8);
-      let speed1 = p5.Vector.fromAngle(this.speed.heading()+((PI/2)*this.diverge)+R.random_num(-this.drift, this.drift)).mult(this.speed.mag());
-      let speed2 = p5.Vector.fromAngle(this.speed.heading()-((PI/2)*this.diverge)+R.random_num(-this.drift, this.drift)).mult(this.speed.mag());
-      this.child1 = new Branch(this.curPos, speed1, this.wid*oneChildSize,     this.drift, this.diverge, this.divRateMin, this.divRateMax);
-      this.child2 = new Branch(this.curPos, speed2, this.wid*(1-oneChildSize), this.drift, this.diverge, this.divRateMin, this.divRateMax);
-    } else {
-      this.child1.divide();
-      this.child2.divide();
     }
   }
 
