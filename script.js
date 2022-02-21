@@ -95,7 +95,7 @@ function setup()
   //background(255,245,180,255); stroke(150,0,0,51);
   frameRate(60);
   ntrees = 40;
-  iterations = 640;
+  iterations = 600;
   gravity = 100000;
   attractor = createVector(size/2, 2000*strokeBase);
   rejectors = initRejectors();//[createVector(200*strokeBase, 900*strokeBase), createVector(800*strokeBase,600*strokeBase)]
@@ -159,10 +159,17 @@ function drawRejector(rejector) {
   let r = rejector.mag;
   let w = r;
   let h = w + strokeBase*R.random_num(200,400);
+  push();
+  noStroke();
   circle(pos.x, pos.y+h/5, w/2);
+  pop();
+  push();
   bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
-  if(light)
+  if(light) {
+    noFill();
     bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+  }
+  pop();
 }
 
 function drawFrame() {
