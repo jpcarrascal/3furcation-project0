@@ -1,8 +1,3 @@
-let tokenData = {
-  hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738",
-  tokenId: "123000456"
-}
-
 function genTokenData(projectNum) {
   let data = {};
   let hash = "0x";
@@ -13,7 +8,9 @@ function genTokenData(projectNum) {
   data.tokenId = (projectNum * 1000000 + Math.floor(Math.random() * 1000)).toString();
   return data;
 }
-tokenData = genTokenData(123);
+let tokenData = genTokenData(123);
+
+tokenData = { hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738", tokenId: "123000456" }
 
 class Random {
   constructor() {
@@ -59,10 +56,13 @@ class Random {
   }
 }
 
-var DEFAULT_SIZE = 1000
-var DIM = Math.min(window.innerWidth, window.innerHeight);
+var DEFAULT_SIZE = 1000;
+var WIDTH = window.innerWidth;
+var HEIGHT = window.innerHeight;
+var DIM = Math.min(WIDTH, HEIGHT);
 var strokeBase = DIM / DEFAULT_SIZE;
 
+let xMin, xMax, yMin, yMax;
 let ntrees, iterations;
 let r, g, b, bgcolor, fgcolor, fgcolorSolid, frameColor, rejectorColor;
 let attractor;
@@ -73,7 +73,20 @@ let R = new Random();
 let light;
 function setup()
 {
-  createCanvas(DIM*3/4, DIM);
+  if(WIDTH > HEIGHT) {
+    xMin = WIDTH/2-DIM*3/8;
+    xMax = DIM*3/4;
+    yMin = 0;
+    yMax = HEIGHT;
+    print("Max is x")
+  } else {
+    xMin = 0;
+    xMax = WIDTH;
+    yMin = HEIGHT/2-DIM*4/6;
+    yMax = DIM*4/3;
+    print("Max is y")
+  }
+  createCanvas(WIDTH, HEIGHT);
   smooth();
   strokeCap(ROUND);
   strokeJoin(ROUND);
@@ -110,7 +123,7 @@ function setup()
   frameRate(60);
   ntrees = 40, nrejectors = R.random_int(2,8);
   iterations = 600;
-  gravity = 100000;
+  gravity = 200000*strokeBase;
   attractor = createVector(width/2, height*2);
   rejectors = initRejectors(nrejectors);
   branches = initBranches(ntrees);
@@ -119,21 +132,17 @@ function setup()
   fill(horizonColor);
   //rect(0, height*0.5, width, height)
   pop();
-  for(let i=0; i<rejectors.length; i++) {
-    drawRejector(rejectors[i], true);
-  }
 }
 
 function draw()
 {
-  let livingBranches = 0;
+//  if(false) {
   if(frameCount < iterations) {
     if(frameCount%4 ==0) {
       fgcolor.setAlpha(alpha(fgcolor)+0);
     }
     for (let j=0; j<branches.length; j++) {
       if(branches[j]) {
-        livingBranches++;
         if (frameCount % (floor(R.random_num(branches[j].divRateMin, branches[j].divRateMax))) == 0) {
           branches[j].growing = false;
           let oneChildSize = R.random_num(0.2, 0.8);
@@ -154,12 +163,19 @@ function draw()
     for(let i=0; i<rejectors.length; i++) {
       drawRejector(rejectors[i]);
     }
+    drawFrame();
   }
-  drawFrame();
   if(frameCount == iterations) {
     branches = null;
     print ("STOP");
   }
+  push()
+  noFill()
+  stroke("red")
+  strokeWeight(1)
+  rect(xMin,yMin,xMax,yMax)
+  circle(xMax,0,10)
+  pop()
 }
 
 function mouseClicked() {
@@ -172,8 +188,8 @@ function initBranches(ntrees) {
     let position = createVector( i*(width/ntrees)+(width/ntrees)/2*R.random_num(0.5,1), 0 );
     let speed = createVector(0,2*strokeBase*R.random_num(0.8,1.2));
     let strokeWidth = R.random_num(0.1, 8)*strokeBase;
-    let drift = 0.15*strokeBase;
-    let diverge = 0.7*strokeBase;
+    let drift = 0.08//*strokeBase;
+    let diverge = 0.4//*strokeBase;
     let divRateMin = 50;
     let divRateMax = 150;
     branches.push( new Branch( position, speed, strokeWidth, drift, diverge, divRateMin, divRateMax ) );
@@ -188,6 +204,7 @@ function initRejectors(nrejectors) {
     let x = i*(width/nrejectors)+(width/nrejectors)/2*R.random_num(0.5,2); //R.random_num(0, 1)*DIM;
     let y = R.random_num(0.1, 0.8)*height;
     rejector.pos = createVector(x, y);
+    //rejector.norm = rejector.pos.copy();
     rejector.mag = strokeBase*R.random_num(200,600)/nrejectors;
     rejector.h = rejector.mag + strokeBase*R.random_num(200,400);
     rejectors.push(rejector);
@@ -230,7 +247,7 @@ function drawRejector(rejector,shadow) {
   push();
   noStroke();
   fill(circleColor);
-  circle(pos.x, pos.y+h/5, w/2);
+  circle(pos.x, pos.y+h/5, w/2.1);
   pop();
 }
 
@@ -238,10 +255,10 @@ function drawFrame() {
   push();
   noStroke();
   fill(frameColor);
-  rect(0, 0, 0.02*width, height);
+  rect(0, 0, xMin, height);
   rect(0, 0, width, 0.02*width);
   rect(0, height-(0.02*width), width, 0.02*width);
-  rect(0.98*width, 0, 0.02*width, height);
+  rect(xMax, 0, width, height);
   pop();  
 }
 
@@ -292,7 +309,7 @@ class Branch {
     }
     if(rejectors) {
       for(let i=0; i<rejectors.length; i++) {
-        rejectors[i].norm = rejectors[i].pos.copy()
+        rejectors[i].norm = rejectors[i].pos.copy();
       }
     }
     if (this.growing) {
