@@ -124,7 +124,7 @@ function setup()
   frameRate(60);
   ntrees = 30;
   nrejectors = R.random_int(2,8);
-  iterations = 600;
+  iterations = 512;
   gravity = 150000*strokeBase*strokeBase;
   attractor = createVector(width/2, height*2);
   rejectors = initRejectors(nrejectors);
@@ -248,17 +248,14 @@ function drawRejector(rejector,shadow) {
 
 
 function drawFrame() {
-  //frame.translate(-xMin,-yMin);
   frame.push();
   frame.noStroke();
   frame.fill(frameColor);
-  // H:
-  frame.rect(0, 0, WIDTH, yMin);
-  frame.rect(0, yMax, WIDTH, HEIGHT);
-  // V:
-  frame.rect(0, 0, xMin, HEIGHT);
-  frame.rect(xMax, 0, width, height);
-  frame.pop();  
+  frame.rect(0, 0, WIDTH, WIDTH);
+  frame.erase();
+  frame.rect(xMin, yMin, WID, HEI);
+  frame.noErase();
+  frame.pop();
 }
 
 function windowResized() {
@@ -289,8 +286,6 @@ function vGradient(x, y, w, h, c1, c2) {
   }
   pop();
 }
-
-//=================================================================
 
 class Branch {
   constructor(start, speed, wid, 
