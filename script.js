@@ -10,7 +10,7 @@ function genTokenData(projectNum) {
 }
 let tokenData = genTokenData(123);
 
-tokenData = { hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738", tokenId: "123000456" }
+//tokenData = { hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738", tokenId: "123000456" }
 
 class Random {
   constructor() {
@@ -62,7 +62,7 @@ var HEIGHT = window.innerHeight;
 var DIM = Math.min(WIDTH, HEIGHT);
 var strokeBase = DIM / DEFAULT_SIZE;
 
-let xMin, xMax, yMin, yMax;
+let xMin, xMax, yMin, yMax, WID, HEI;
 let ntrees, iterations;
 let r, g, b, bgcolor, fgcolor, fgcolorSolid, frameColor, rejectorColor;
 let attractor;
@@ -73,20 +73,23 @@ let R = new Random();
 let light;
 function setup()
 {
-  if(WIDTH > HEIGHT) {
-    xMin = WIDTH/2-DIM*3/8;
-    xMax = DIM*3/4;
+  if(WIDTH/HEIGHT > 3/4) {
     yMin = 0;
+    HEI = HEIGHT;
     yMax = HEIGHT;
-    print("Max is x")
+    xMin = WIDTH/2-HEI*3/8;
+    WID = HEI*3/4;
+    xMax = xMin+WID;
   } else {
     xMin = 0;
+    WID = WIDTH;
     xMax = WIDTH;
-    yMin = HEIGHT/2-DIM*4/6;
-    yMax = DIM*4/3;
-    print("Max is y")
+    yMin = HEIGHT/2-WID*4/6;
+    HEI = WID*4/3;
+    yMax = yMin+HEI;
   }
   createCanvas(WIDTH, HEIGHT);
+  frame = createGraphics(WIDTH, HEIGHT);
   smooth();
   strokeCap(ROUND);
   strokeJoin(ROUND);
@@ -98,44 +101,39 @@ function setup()
     fgcolor = color(150,0,0,51);
     fgcolorSolid = color(150,0,0,255);
     frameColor = color(r*0.7, g*0.7, b*0.7);
-    horizonColor = color(r*0.9, g*0.9, b*0.9);
     bgcolor = color(r,g,b);
     circleColor = color(compColor(bgcolor));
     circleColor.setAlpha(90);
-    vGradient(0, 0, width, height, bgcolor, color(r*1.3,g*1.3,b*1.3));
+    vGradient(0, 0, width, height, bgcolor, frameColor);
   } else {
-    r = R.random_int(0,50);
-    g = R.random_int(0,50);
-    b = R.random_int(0,50);
+    r = R.random_int(15,55);
+    g = R.random_int(15,55);
+    b = R.random_int(15,55);
     fgcolor = color(250,250,250,51);
     fgcolorSolid = color(250,250,250,255);
-    frameColor = color(r*1.4, g*1.4, b*1.4);
-    horizonColor = color(r*1.1, g*1.1, b*1.1);
+    frameColor = color(r*0.5, g*0.5, b*0.5);
     bgcolor = color(r,g,b);
     circleColor = color(compColor(bgcolor));
     circleColor.setAlpha(60);
-    vGradient(0, 0, width, height, bgcolor, color(r*0.5,g*0.5,b*0.5));
+    vGradient(0, 0, width, height, bgcolor, frameColor);
   }
   rejectorColor = lerpColor(fgcolor, bgcolor,0.8);
   rejectorColor.setAlpha(255);    
   stroke(fgcolor);
   fill(fgcolor);
   frameRate(60);
-  ntrees = 40, nrejectors = R.random_int(2,8);
+  ntrees = 30;
+  nrejectors = R.random_int(2,8);
   iterations = 600;
-  gravity = 200000*strokeBase;
+  gravity = 150000*strokeBase*strokeBase;
   attractor = createVector(width/2, height*2);
   rejectors = initRejectors(nrejectors);
   branches = initBranches(ntrees);
-  push();
-  noStroke();
-  fill(horizonColor);
-  //rect(0, height*0.5, width, height)
-  pop();
 }
 
 function draw()
 {
+  translate(xMin, yMin);
 //  if(false) {
   if(frameCount < iterations) {
     if(frameCount%4 ==0) {
@@ -143,7 +141,8 @@ function draw()
     }
     for (let j=0; j<branches.length; j++) {
       if(branches[j]) {
-        if (frameCount % (floor(R.random_num(branches[j].divRateMin, branches[j].divRateMax))) == 0) {
+        let splitChance = ((R.random_int(branches[j].divRateMin, branches[j].divRateMax)));
+        if (frameCount % splitChance == 0) {
           branches[j].growing = false;
           let oneChildSize = R.random_num(0.2, 0.8);
           let speed1 = p5.Vector.fromAngle(branches[j].speed.heading()+((PI/2)*branches[j].diverge)+R.random_num(-branches[j].drift, branches[j].drift)).mult(branches[j].speed.mag());
@@ -161,31 +160,26 @@ function draw()
       }
     }
     for(let i=0; i<rejectors.length; i++) {
-      drawRejector(rejectors[i]);
+      drawRejector(rejectors[i],frameCount==1);
     }
     drawFrame();
+    image(frame, -xMin,-yMin);
   }
   if(frameCount == iterations) {
     branches = null;
-    print ("STOP");
+    print ("Done.");
   }
-  push()
-  noFill()
-  stroke("red")
-  strokeWeight(1)
-  rect(xMin,yMin,xMax,yMax)
-  circle(xMax,0,10)
-  pop()
+
 }
 
 function mouseClicked() {
-  save("frame.png");
+  //save("frame.png");
 }
 
 function initBranches(ntrees) {
   let branches = Array();
   for (let i = 0; i < ntrees; i++) {
-    let position = createVector( i*(width/ntrees)+(width/ntrees)/2*R.random_num(0.5,1), 0 );
+    let position = createVector( i*(WID/ntrees)+(WID/ntrees)/2*R.random_num(0.5,1), 0 );
     let speed = createVector(0,2*strokeBase*R.random_num(0.8,1.2));
     let strokeWidth = R.random_num(0.1, 8)*strokeBase;
     let drift = 0.08//*strokeBase;
@@ -201,12 +195,13 @@ function initRejectors(nrejectors) {
   let rejectors = Array();
   for (let i = 0; i < nrejectors; i++) {
     let rejector = Object();
-    let x = i*(width/nrejectors)+(width/nrejectors)/2*R.random_num(0.5,2); //R.random_num(0, 1)*DIM;
-    let y = R.random_num(0.1, 0.8)*height;
+    let x = i*(WID/nrejectors)+(WID/nrejectors)/2*R.random_num(0.5,2);
+    let y = R.random_num(0.1, 0.8)*HEI;
     rejector.pos = createVector(x, y);
-    //rejector.norm = rejector.pos.copy();
     rejector.mag = strokeBase*R.random_num(200,600)/nrejectors;
-    rejector.h = rejector.mag + strokeBase*R.random_num(200,400);
+    rejector.w = rejector.mag;
+    rejector.mag *= strokeBase;
+    rejector.h = rejector.w + strokeBase*R.random_num(200,400);
     rejectors.push(rejector);
   }
   return rejectors;
@@ -215,21 +210,21 @@ function initRejectors(nrejectors) {
 function drawRejector(rejector,shadow) {
   if(!shadow) shadow = false;
   let pos = rejector.pos;
-  let w = rejector.mag;
+  let w = rejector.w;
   let h = rejector.h;
 
   push();
   fill(rejectorColor);
   if(light) {
     noStroke();
-    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
     fill( lerpColor(bgcolor, color(255,255,255), 0.7) );
-    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
   } else {
     noStroke();
-    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
     fill( lerpColor(bgcolor, color(0,0,0), 0.5) );
-    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+strokeBase*100, pos.x, pos.y+h);
+    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
   }
   if(shadow) {
     posShadow = createVector(pos.x+20*strokeBase, pos.y+5*strokeBase);
@@ -239,8 +234,8 @@ function drawRejector(rejector,shadow) {
       fill(0,0,0,10);
     else
       fill(0,0,0,30);
-    bezier(posShadow.x, posShadow.y, posShadow.x-w, posShadow.y+w, posShadow.x, posShadow.y+strokeBase*100, posShadow.x, posShadow.y+h);
-    bezier(posShadow.x, posShadow.y, posShadow.x+w, posShadow.y+w, posShadow.x, posShadow.y+strokeBase*100, posShadow.x, posShadow.y+h);
+    bezier(posShadow.x, posShadow.y, posShadow.x-w, posShadow.y+w, posShadow.x, posShadow.y+100*strokeBase, posShadow.x, posShadow.y+h);
+    bezier(posShadow.x, posShadow.y, posShadow.x+w, posShadow.y+w, posShadow.x, posShadow.y+100*strokeBase, posShadow.x, posShadow.y+h);
     pop();
   }
   pop();
@@ -251,15 +246,24 @@ function drawRejector(rejector,shadow) {
   pop();
 }
 
+
 function drawFrame() {
-  push();
-  noStroke();
-  fill(frameColor);
-  rect(0, 0, xMin, height);
-  rect(0, 0, width, 0.02*width);
-  rect(0, height-(0.02*width), width, 0.02*width);
-  rect(xMax, 0, width, height);
-  pop();  
+  //frame.translate(-xMin,-yMin);
+  frame.push();
+  frame.noStroke();
+  frame.fill(frameColor);
+  // H:
+  frame.rect(0, 0, WIDTH, yMin);
+  frame.rect(0, yMax, WIDTH, HEIGHT);
+  // V:
+  frame.rect(0, 0, xMin, HEIGHT);
+  frame.rect(xMax, 0, width, height);
+  frame.pop();  
+}
+
+function windowResized() {
+  window.location.reload();
+  print("Reloading...");
 }
 
 
@@ -303,27 +307,26 @@ class Branch {
   grow(attractor, rejectors, gravity, frames) {
     strokeWeight(this.wid);
     let attractorNorm;
+    let rejectorNorm;
     if(attractor) {
       attractor.x = this.curPos.x;
       attractorNorm = attractor.copy();
     }
-    if(rejectors) {
-      for(let i=0; i<rejectors.length; i++) {
-        rejectors[i].norm = rejectors[i].pos.copy();
-      }
-    }
     if (this.growing) {
       if (attractor != null) {
         let D;
+        let mag = this.speed.mag();
         D = p5.Vector.dist(this.curPos, attractorNorm);
         attractorNorm.sub(this.curPos).normalize().mult(gravity/(D*D));
-        this.speed = p5.Vector.fromAngle(this.speed.heading() + R.random_num(-this.drift, this.drift)).add(attractorNorm).normalize().mult(this.speed.mag());
+        this.speed = p5.Vector.fromAngle(this.speed.heading() + R.random_num(-this.drift, this.drift)).add(attractorNorm).normalize();
         for(let i=0; i<rejectors.length; i++) {
-          D = p5.Vector.dist(this.curPos, rejectors[i].norm);
-          rejectors[i].norm.sub(this.curPos).normalize().mult(-0.00001*rejectors[i].mag*gravity/(D*D));
-          let rejectVect = createVector(rejectors[i].norm.x, 0);
-          this.speed = p5.Vector.fromAngle(this.speed.heading()).add(rejectVect).normalize().mult(this.speed.mag());
+          rejectorNorm = rejectors[i].pos.copy();
+          D = p5.Vector.dist(this.curPos, rejectorNorm);
+          rejectorNorm.sub(this.curPos).normalize().mult(-rejectors[i].mag/(D*D));
+          let rejectVect = createVector(rejectorNorm.x, 0);
+          this.speed = p5.Vector.fromAngle(this.speed.heading()).add(rejectVect).normalize();
         }
+        this.speed.mult(mag);
       }
       else {
         this.speed = p5.Vector.fromAngle(this.speed.heading() + R.random_num(-this.drift, this.drift)).mult(this.speed.mag());
@@ -331,9 +334,6 @@ class Branch {
       let nextPos = p5.Vector.add(this.curPos, this.speed);
       this.linePV(this.curPos, nextPos);
       this.curPos = nextPos;
-    } else {
-      this.child1.grow(attractor, rejectors, gravity, frames);
-      this.child2.grow(attractor, rejectors, gravity, frames);
     }
   }
   linePV(a, b) {
