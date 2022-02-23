@@ -10,7 +10,7 @@ function genTokenData(projectNum) {
 }
 let tokenData = genTokenData(123);
 
-//tokenData = { hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738", tokenId: "123000456" }
+tokenData = { hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738", tokenId: "123000456" }
 
 class Random {
   constructor() {
@@ -124,7 +124,7 @@ function setup()
   frameRate(60);
   ntrees = 30;
   nrejectors = R.random_int(2,8);
-  iterations = 512;
+  iterations = 600;
   gravity = 150000*strokeBase*strokeBase;
   attractor = createVector(width/2, height*2);
   rejectors = initRejectors(nrejectors);
