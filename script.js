@@ -88,8 +88,12 @@ function setup()
     HEI = WID*4/3;
     yMax = yMin+HEI;
   }
+
   createCanvas(WIDTH, HEIGHT);
   frame = createGraphics(WIDTH, HEIGHT);
+  print(HEIGHT)
+  print(HEI)
+  print(height)
   smooth();
   strokeCap(ROUND);
   strokeJoin(ROUND);
@@ -104,7 +108,7 @@ function setup()
     bgcolor = color(r,g,b);
     circleColor = color(compColor(bgcolor));
     circleColor.setAlpha(90);
-    vGradient(0, 0, width, height, bgcolor, frameColor);
+    vGradient(0, 0, xMax, HEI, bgcolor, frameColor);
   } else {
     r = R.random_int(15,55);
     g = R.random_int(15,55);
@@ -255,6 +259,9 @@ function drawFrame() {
   frame.erase();
   frame.rect(xMin, yMin, WID, HEI);
   frame.noErase();
+  frame.noFill()
+  frame.stroke("red")
+  //frame.rect(xMin, yMin, WID, HEI);
   frame.pop();
 }
 
