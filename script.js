@@ -136,16 +136,16 @@ function setup()
 function draw()
 {
   translate(xMin, yMin);
-//  if(false) {
   if(frameCount < iterations && running) {
-    if(frameCount%9 == 0) {
+    if(frameCount%20 == 0) {
       let al = alpha(fgcolor);
       fgcolor.setAlpha(al-1);
       stroke(fgcolor);
-      if(al == 0) running = false;
+      if(al == 25) running = false;
     }
     for (let j=0; j<branches.length; j++) {
       if(branches[j]) {
+        if(!branches[j].growing) branches[j] = null;
         let splitChance = ((R.random_int(branches[j].divRateMin, branches[j].divRateMax)));
         if (frameCount % splitChance == 0) {
           branches[j].growing = false;
@@ -186,7 +186,7 @@ function initBranches(ntrees) {
   for (let i = 0; i < ntrees; i++) {
     let position = createVector( i*(WID/ntrees)+(WID/ntrees)/2*R.random_num(0.5,1), 0 );
     let speed = createVector(0,2*strokeBase*R.random_num(0.8,1.2));
-    let strokeWidth = R.random_num(0.1, 8)*strokeBase;
+    let strokeWidth = R.random_num(3, 15)*strokeBase;
     let drift = 0.08//*strokeBase;
     let diverge = 0.4//*strokeBase;
     let divRateMin = 50;
@@ -201,11 +201,11 @@ function initRejectors(nrejectors) {
   for (let i = 0; i < nrejectors; i++) {
     let rejector = Object();
     let x = i*(WID/nrejectors)+(WID/nrejectors)/2*R.random_num(0.5,2);
-    let y = R.random_num(0.1, 0.7)*HEI;
+    let y = R.random_num(0.05, 0.6)*HEI;
     rejector.pos = createVector(x, y);
     rejector.mag = strokeBase*R.random_num(200,600)/nrejectors;
     rejector.w = rejector.mag;
-    rejector.mag *= strokeBase;
+    rejector.mag *= strokeBase/2;
     rejector.h = rejector.w + strokeBase*R.random_num(200,400);
     rejectors.push(rejector);
   }
@@ -307,6 +307,8 @@ class Branch {
     this.divRateMax = divRateMax;
   }
   grow(attractor, rejectors, gravity, frames) {
+    if(frames%18 == 0) this.wid*=0.95;
+    if(this.wid < 0) this.growing = false;
     strokeWeight(this.wid);
     let attractorNorm;
     let rejectorNorm;
