@@ -59,10 +59,8 @@ class Random {
 var DEFAULT_SIZE = 1000;
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
-var DIM = Math.min(WIDTH, HEIGHT);
-var strokeBase = DIM / DEFAULT_SIZE;
-
-let xMin, xMax, yMin, yMax, WID, HEI;
+let strokeBase;
+let xMin, yMin, WID, HEI;
 let ntrees, iterations;
 let r, g, b, bgcolor, fgcolor, fgcolorSolid, frameColor, rejectorColor;
 let attractor;
@@ -77,17 +75,15 @@ function setup()
   if(WIDTH/HEIGHT > 3/4) {
     yMin = 0;
     HEI = HEIGHT;
-    yMax = HEIGHT;
     xMin = WIDTH/2-HEI*3/8;
     WID = HEI*3/4;
-    xMax = xMin+WID;
+    strokeBase = HEIGHT/WIDTH;
   } else {
     xMin = 0;
     WID = WIDTH;
-    xMax = WIDTH;
     yMin = HEIGHT/2-WID*4/6;
     HEI = WID*4/3;
-    yMax = yMin+HEI;
+    strokeBase = WIDTH/HEIGHT;
   }
 
   createCanvas(WIDTH, HEIGHT);
@@ -125,7 +121,7 @@ function setup()
   fill(fgcolor);
   frameRate(60);
   ntrees = 30;
-  nrejectors = R.random_int(2,8);
+  nrejectors = R.random_int(3,7);
   iterations = 600;
   gravity = 150000*strokeBase*strokeBase;
   attractor = createVector(WID/2, HEI*2);
@@ -137,7 +133,7 @@ function draw()
 {
   translate(xMin, yMin);
   if(frameCount < iterations && running) {
-    if(frameCount%20 == 0) {
+    if(frameCount%18 == 0) {
       let al = alpha(fgcolor);
       fgcolor.setAlpha(al-1);
       stroke(fgcolor);
@@ -149,7 +145,7 @@ function draw()
         let splitChance = ((R.random_int(branches[j].divRateMin, branches[j].divRateMax)));
         if (frameCount % splitChance == 0) {
           branches[j].growing = false;
-          let oneChildSize = R.random_num(0.2, 0.8);
+          let oneChildSize = R.random_num(0.3, 0.9);
           let speed1 = p5.Vector.fromAngle(branches[j].speed.heading()+((PI/2)*branches[j].diverge)+R.random_num(-branches[j].drift, branches[j].drift)).mult(branches[j].speed.mag());
           let speed2 = p5.Vector.fromAngle(branches[j].speed.heading()-((PI/2)*branches[j].diverge)+R.random_num(-branches[j].drift, branches[j].drift)).mult(branches[j].speed.mag());
           branches.push( new Branch(branches[j].curPos, speed1, branches[j].wid*oneChildSize,     branches[j].drift, branches[j].diverge, branches[j].divRateMin, branches[j].divRateMax) );
@@ -164,11 +160,12 @@ function draw()
         }
       }
     }
+    drawFrame();
+    image(frame, -xMin,-yMin);
+
     for(let i=0; i<rejectors.length; i++) {
       drawRejector(rejectors[i],frameCount==1);
     }
-    drawFrame();
-    image(frame, -xMin,-yMin);
   }
   if(frameCount == iterations) {
     branches = null;
@@ -186,7 +183,7 @@ function initBranches(ntrees) {
   for (let i = 0; i < ntrees; i++) {
     let position = createVector( i*(WID/ntrees)+(WID/ntrees)/2*R.random_num(0.5,1), 0 );
     let speed = createVector(0,2*strokeBase*R.random_num(0.8,1.2));
-    let strokeWidth = R.random_num(3, 15)*strokeBase;
+    let strokeWidth = R.random_num(3, 13)*strokeBase;
     let drift = 0.08//*strokeBase;
     let diverge = 0.4//*strokeBase;
     let divRateMin = 50;
@@ -203,9 +200,8 @@ function initRejectors(nrejectors) {
     let x = i*(WID/nrejectors)+(WID/nrejectors)/2*R.random_num(0.5,2);
     let y = R.random_num(0.05, 0.6)*HEI;
     rejector.pos = createVector(x, y);
-    rejector.mag = strokeBase*R.random_num(200,600)/nrejectors;
-    rejector.w = rejector.mag;
-    rejector.mag *= strokeBase/2;
+    rejector.w = strokeBase*R.random_num(200,600)/nrejectors;
+    rejector.mag = rejector.w*strokeBase/2;
     rejector.h = rejector.w + strokeBase*R.random_num(200,400);
     rejectors.push(rejector);
   }
@@ -257,8 +253,13 @@ function drawFrame() {
   frame.noStroke();
   frame.fill(frameColor);
   frame.rect(0, 0, WIDTH, HEIGHT);
+  frame.translate(xMin, yMin);
   frame.erase();
-  frame.rect(xMin, yMin, WID, HEI);
+  frame.stroke("Red")
+  frame.bezier(WID/2, 0, WID*0.2, HEI*0.1, 0,   HEI/4, 0,   HEI*0.5);       
+  frame.bezier(WID/2, 0, WID*0.8, HEI*0.1, WID, HEI/4, WID, HEI*0.5);       
+  frame.triangle(0, HEI*0.5, WID/2, 0, WID, HEI*0.5);
+  frame.rect(0, HEI*0.5, WID, HEI*0.5);
   frame.noErase();
   frame.pop();
 }
@@ -283,8 +284,7 @@ function compColor(c) {
 function vGradient(x, y, w, h, c1, c2) {
   push();
   noFill();
-  let i 
-  for (i = y; i <= y + h; i++) {
+  for (let i = y; i <= y + h; i++) {
     let inter = map(i, y, y + h, 0, 1);
     let c = lerpColor(c1, c2, inter);
     strokeWeight(2)
