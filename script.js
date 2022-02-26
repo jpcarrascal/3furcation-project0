@@ -10,7 +10,7 @@ function genTokenData(projectNum) {
 }
 let tokenData = genTokenData(123);
 
-tokenData = { hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738", tokenId: "123000456" }
+//tokenData = { hash: "0x11ac16678959949c12d5410212301960fc496813cbc3495bf77aeed738579738", tokenId: "123000456" }
 
 class Random {
   constructor() {
@@ -59,14 +59,16 @@ class Random {
 var DEFAULT_SIZE = 1000;
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
-let strokeBase;
+var DIM = Math.min(WIDTH, HEIGHT);
+var strokeBase = DIM / DEFAULT_SIZE;
+
 let xMin, yMin, WID, HEI;
 let ntrees, iterations;
-let r, g, b, bgcolor, fgcolor, fgcolorSolid, frameColor, rejectorColor;
+let r, g, b, bgcolor, fgcolor, frameColor, rejectorColor, rejectorColor2;
 let attractor;
 let rejectors;
 let gravity;
-let branches = Array();
+let branches;
 let R = new Random();
 let light;
 let running = true;
@@ -77,29 +79,31 @@ function setup()
     HEI = HEIGHT;
     xMin = WIDTH/2-HEI*3/8;
     WID = HEI*3/4;
-    strokeBase = HEIGHT/WIDTH;
   } else {
     xMin = 0;
     WID = WIDTH;
     yMin = HEIGHT/2-WID*4/6;
     HEI = WID*4/3;
-    strokeBase = WIDTH/HEIGHT;
   }
-
   createCanvas(WIDTH, HEIGHT);
   frame = createGraphics(WIDTH, HEIGHT);
   smooth();
   strokeCap(ROUND);
   strokeJoin(ROUND);
   light = R.random_bool(0.5);
+  let noiseScale=0.05;
+  for (let x=0; x < HEIGHT; x++) {
+    let noiseVal = noise(x*noiseScale, noiseScale);
+    stroke(noiseVal*255);
+    line(x, 0, x, HEIGHT);
+  }
   if(light) {
     r = R.random_int(180,200);
     g = R.random_int(180,200);
     b = R.random_int(180,220);
     fgcolor = color(150,0,0,51);
-    fgcolorSolid = color(150,0,0,255);
     frameColor = color(r*0.7, g*0.7, b*0.7);
-    bgcolor = color(r,g,b);
+    bgcolor = color(r,g,b,120);
     circleColor = color(compColor(bgcolor));
     circleColor.setAlpha(90);
     vGradient(0, yMin, WIDTH, HEI, bgcolor, frameColor);
@@ -107,15 +111,18 @@ function setup()
     r = R.random_int(15,55);
     g = R.random_int(15,55);
     b = R.random_int(15,55);
-    fgcolor = color(250,250,250,51);
-    fgcolorSolid = color(250,250,250,255);
+    if(r<b && r<g) r*=0.3;
+    else if(g<b && g<r) g*=0.3;
+    else b*=0.3;
+    fgcolor = color(200,200,200,51);
     frameColor = color(r*0.5, g*0.5, b*0.5);
-    bgcolor = color(r,g,b);
+    bgcolor = color(r,g,b,120);
     circleColor = color(compColor(bgcolor));
     circleColor.setAlpha(60);
     vGradient(0, yMin, WIDTH, HEI, bgcolor, frameColor);
   }
   rejectorColor = lerpColor(fgcolor, bgcolor,0.8);
+  rejectorColor2 = color(r*1.2, g*1.2, b*1.2);
   rejectorColor.setAlpha(255);    
   stroke(fgcolor);
   fill(fgcolor);
@@ -213,18 +220,18 @@ function drawRejector(rejector,shadow) {
   let pos = rejector.pos;
   let w = rejector.w;
   let h = rejector.h;
-
   push();
   fill(rejectorColor);
+  strokeWeight(2*strokeBase);
   if(light) {
-    noStroke();
+    stroke(lerpColor(bgcolor, frameColor, 0.7))
     bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
-    fill( lerpColor(bgcolor, color(255,255,255), 0.7) );
+    fill( lerpColor(rejectorColor2, color(255,255,255), 0.7) );
     bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
   } else {
-    noStroke();
+    stroke(bgcolor)
     bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
-    fill( lerpColor(bgcolor, color(0,0,0), 0.5) );
+    fill( lerpColor(rejectorColor2, color(0,0,0), 0.5) );
     bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
   }
   if(shadow) {
@@ -247,7 +254,6 @@ function drawRejector(rejector,shadow) {
   pop();
 }
 
-
 function drawFrame() {
   frame.push();
   frame.noStroke();
@@ -256,9 +262,9 @@ function drawFrame() {
   frame.translate(xMin, yMin);
   frame.erase();
   frame.stroke("Red")
-  frame.bezier(WID/2, 0, WID*0.2, HEI*0.1, 0,   HEI/4, 0,   HEI*0.5);       
-  frame.bezier(WID/2, 0, WID*0.8, HEI*0.1, WID, HEI/4, WID, HEI*0.5);       
-  frame.triangle(0, HEI*0.5, WID/2, 0, WID, HEI*0.5);
+  frame.bezier(WID/2, 0.01*HEI, WID*0.2, HEI*0.1, 0,   HEI/4, 0,   HEI*0.5);       
+  frame.bezier(WID/2, 0.01*HEI, WID*0.8, HEI*0.1, WID, HEI/4, WID, HEI*0.5);       
+  frame.triangle(0, HEI*0.5, WID/2, 0.01*HEI, WID, HEI*0.5);
   frame.rect(0, HEI*0.5, WID, HEI*0.5);
   frame.noErase();
   frame.pop();
