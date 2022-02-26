@@ -92,7 +92,7 @@ function setup()
   strokeJoin(ROUND);
   light = R.random_bool(0.5);
   let noiseScale=0.05;
-  for (let x=0; x < HEIGHT; x++) {
+  for (let x=0; x < WIDTH; x++) {
     let noiseVal = noise(x*noiseScale, noiseScale);
     stroke(noiseVal*255);
     line(x, 0, x, HEIGHT);
@@ -163,7 +163,6 @@ function draw()
           branches[j] = null;
         } else {
           branches[j].grow(attractor, rejectors, gravity, frameCount);
-          //branches[j].grow(null, gravity, rejectors, frameCount);
         }
       }
     }
@@ -181,18 +180,14 @@ function draw()
 
 }
 
-function mouseClicked() {
-  //save("frame.png");
-}
-
 function initBranches(ntrees) {
   let branches = Array();
   for (let i = 0; i < ntrees; i++) {
     let position = createVector( i*(WID/ntrees)+(WID/ntrees)/2*R.random_num(0.5,1), 0 );
     let speed = createVector(0,2*strokeBase*R.random_num(0.8,1.2));
     let strokeWidth = R.random_num(3, 13)*strokeBase;
-    let drift = 0.08//*strokeBase;
-    let diverge = 0.4//*strokeBase;
+    let drift = 0.08;
+    let diverge = 0.4;
     let divRateMin = 50;
     let divRateMax = 150;
     branches.push( new Branch( position, speed, strokeWidth, drift, diverge, divRateMin, divRateMax ) );
@@ -220,19 +215,20 @@ function drawRejector(rejector,shadow) {
   let pos = rejector.pos;
   let w = rejector.w;
   let h = rejector.h;
+  let yP = 100*strokeBase;
   push();
   fill(rejectorColor);
   strokeWeight(2*strokeBase);
   if(light) {
-    stroke(lerpColor(bgcolor, frameColor, 0.7))
-    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
+    stroke(lerpColor(rejectorColor2, frameColor, 0.7))
+    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+yP, pos.x, pos.y+h);
     fill( lerpColor(rejectorColor2, color(255,255,255), 0.7) );
-    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
+    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+yP, pos.x, pos.y+h);
   } else {
     stroke(bgcolor)
-    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
+    bezier(pos.x, pos.y, pos.x-w, pos.y+w, pos.x, pos.y+yP, pos.x, pos.y+h);
     fill( lerpColor(rejectorColor2, color(0,0,0), 0.5) );
-    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+100*strokeBase, pos.x, pos.y+h);
+    bezier(pos.x, pos.y, pos.x+w, pos.y+w, pos.x, pos.y+yP, pos.x, pos.y+h);
   }
   if(shadow) {
     posShadow = createVector(pos.x+20*strokeBase, pos.y+5*strokeBase);
@@ -242,8 +238,8 @@ function drawRejector(rejector,shadow) {
       fill(0,0,0,10);
     else
       fill(0,0,0,30);
-    bezier(posShadow.x, posShadow.y, posShadow.x-w, posShadow.y+w, posShadow.x, posShadow.y+100*strokeBase, posShadow.x, posShadow.y+h);
-    bezier(posShadow.x, posShadow.y, posShadow.x+w, posShadow.y+w, posShadow.x, posShadow.y+100*strokeBase, posShadow.x, posShadow.y+h);
+    bezier(posShadow.x, posShadow.y, posShadow.x-w, posShadow.y+w, posShadow.x, posShadow.y+yP, posShadow.x, posShadow.y+h);
+    bezier(posShadow.x, posShadow.y, posShadow.x+w, posShadow.y+w, posShadow.x, posShadow.y+yP, posShadow.x, posShadow.y+h);
     pop();
   }
   pop();
@@ -261,7 +257,7 @@ function drawFrame() {
   frame.rect(0, 0, WIDTH, HEIGHT);
   frame.translate(xMin, yMin);
   frame.erase();
-  frame.stroke("Red")
+  frame.stroke(0)
   frame.bezier(WID/2, 0.01*HEI, WID*0.2, HEI*0.1, 0,   HEI/4, 0,   HEI*0.5);       
   frame.bezier(WID/2, 0.01*HEI, WID*0.8, HEI*0.1, WID, HEI/4, WID, HEI*0.5);       
   frame.triangle(0, HEI*0.5, WID/2, 0.01*HEI, WID, HEI*0.5);
@@ -272,9 +268,7 @@ function drawFrame() {
 
 function windowResized() {
   window.location.reload();
-  print("Reloading...");
 }
-
 
 function compColor(c) {
   let input = [red(c), green(c), blue(c)];
@@ -286,9 +280,7 @@ function compColor(c) {
   return color(output);
 }
 
-
 function vGradient(x, y, w, h, c1, c2) {
-  push();
   noFill();
   for (let i = y; i <= y + h; i++) {
     let inter = map(i, y, y + h, 0, 1);
@@ -297,7 +289,6 @@ function vGradient(x, y, w, h, c1, c2) {
     stroke(c);
     line(x, i, x + w, i);
   }
-  pop();
 }
 
 class Branch {
