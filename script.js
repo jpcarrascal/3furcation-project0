@@ -108,9 +108,9 @@ function setup()
     circleColor.setAlpha(90);
     vGradient(0, yMin, WIDTH, HEI, bgcolor, frameColor);
   } else {
-    r = R.random_int(15,55);
-    g = R.random_int(15,55);
-    b = R.random_int(15,55);
+    r = R.random_int(20,60);
+    g = R.random_int(20,60);
+    b = R.random_int(20,60);
     if(r<b && r<g) r*=0.3;
     else if(g<b && g<r) g*=0.3;
     else b*=0.3;
