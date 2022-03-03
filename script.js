@@ -127,7 +127,7 @@ function setup()
   stroke(fgcolor);
   fill(fgcolor);
   frameRate(60);
-  ntrees = 30;
+  ntrees = 25;
   nrejectors = R.random_int(3,7);
   iterations = 600;
   gravity = 150000*strokeBase*strokeBase;
@@ -185,7 +185,7 @@ function initBranches(ntrees) {
   for (let i = 0; i < ntrees; i++) {
     let position = createVector( i*(WID/ntrees)+(WID/ntrees)/2*R.random_num(0.5,1), 0 );
     let speed = createVector(0,2*strokeBase*R.random_num(0.8,1.2));
-    let strokeWidth = R.random_num(3, 13)*strokeBase;
+    let strokeWidth = R.random_num(5, 15)*strokeBase;
     let drift = 0.08;
     let diverge = 0.4;
     let divRateMin = 50;
