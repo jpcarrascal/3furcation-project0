@@ -260,7 +260,7 @@ function drawFrame() {
   frame.stroke(0)
   frame.bezier(WID/2, 0.01*HEI, WID*0.2, HEI*0.1, 0,   HEI/4, 0,   HEI*0.5);       
   frame.bezier(WID/2, 0.01*HEI, WID*0.8, HEI*0.1, WID, HEI/4, WID, HEI*0.5);       
-  frame.triangle(0, HEI*0.5, WID/2, 0.01*HEI, WID, HEI*0.5);
+  frame.triangle(0, HEI*0.5, WID/2, 0.009*HEI, WID, HEI*0.5);
   frame.rect(0, HEI*0.5, WID, HEI*0.5);
   frame.noErase();
   frame.pop();
